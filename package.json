@@ -1,4 +1,10 @@
 {
   "name": "kubelka-munk",
-  "version": "0.0.0"
+  "version": "0.0.0",
+  "devDependencies": {
+    "vite": "7.1.11"
+  },
+  "scripts": {
+    "dev": "vite"
+  }
 }
