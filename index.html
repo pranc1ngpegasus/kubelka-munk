@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>Kubelka-Munk Mix Demo</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <h1>Spectral.js カラーミックス</h1>
+        <p>3色を入力し、2色間の混色割合を調整するとカラーパレットが更新されます。</p>
+      </header>
+      <section class="controls">
+        <div class="field-group">
+          <label for="color-1">カラー1</label>
+          <div class="input-with-chip">
+            <input id="color-1" name="color1" type="text" value="#d33f49" />
+            <span class="color-sample" data-sample-for="color-1"></span>
+          </div>
+        </div>
+        <div class="field-group">
+          <label for="color-2">カラー2</label>
+          <div class="input-with-chip">
+            <input id="color-2" name="color2" type="text" value="#f0efeb" />
+            <span class="color-sample" data-sample-for="color-2"></span>
+          </div>
+        </div>
+        <div class="field-group">
+          <label for="color-3">カラー3</label>
+          <div class="input-with-chip">
+            <input id="color-3" name="color3" type="text" value="#4357ad" />
+            <span class="color-sample" data-sample-for="color-3"></span>
+          </div>
+        </div>
+      </section>
+      <section class="mix-bars-section">
+        <h2>2色ミックスバー</h2>
+        <p>各バーをクリックして 2 色間の混色割合を選択できます。</p>
+        <div id="mix-bars" class="mix-bars"></div>
+      </section>
+      <section class="multi-mix-section">
+        <h2>3色混色マップ</h2>
+        <p>3色の組み合わせ全体を視覚化した逆三角形のパレットです。</p>
+        <div id="multi-mix" class="multi-mix"></div>
+      </section>
+    </main>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
