@@ -10,6 +10,16 @@ const colorSamples = Array.from(
   document.querySelectorAll(".color-sample"),
 );
 
+// colorSamplesとinputのマッピングを事前に作成
+const sampleInputMap = new Map();
+colorSamples.forEach((sample) => {
+  const targetId = sample.dataset.sampleFor;
+  const input = colorInputs.find((inp) => inp.id === targetId);
+  if (input) {
+    sampleInputMap.set(sample, input);
+  }
+});
+
 const multiContainer = document.getElementById("multi-mix");
 const mixBarsContainer = document.getElementById("mix-bars");
 let multiCanvas = null;
@@ -26,6 +36,24 @@ const PAIR_CONFIGS = [
 
 const pairStates = PAIR_CONFIGS.map(() => ({ ratio: 0.5 }));
 let activePairIndex = 0;
+
+function calculateBarycentricCoordinates(x, y, triangle) {
+  const denom =
+    (triangle.b.y - triangle.c.y) * (triangle.a.x - triangle.c.x) +
+    (triangle.c.x - triangle.b.x) * (triangle.a.y - triangle.c.y);
+
+  const w1 =
+    ((triangle.b.y - triangle.c.y) * (x - triangle.c.x) +
+      (triangle.c.x - triangle.b.x) * (y - triangle.c.y)) /
+    denom;
+  const w2 =
+    ((triangle.c.y - triangle.a.y) * (x - triangle.c.x) +
+      (triangle.a.x - triangle.c.x) * (y - triangle.c.y)) /
+    denom;
+  const w3 = 1 - w1 - w2;
+
+  return { w1, w2, w3 };
+}
 function parseColor(value) {
   try {
     return new spectral.Color(value.trim());
@@ -36,9 +64,7 @@ function parseColor(value) {
 
 function toHexString(value) {
   try {
-    return new spectral.Color(value.trim())
-      .toString({ format: "hex" })
-      .toUpperCase();
+    return parseColor(value).toString({ format: "hex" }).toUpperCase();
   } catch (error) {
     return "#000000";
   }
@@ -233,10 +259,6 @@ function updateMultiMix(colors) {
     c: { x: pixelWidth / 2, y: pixelHeight },
   };
 
-  const denom =
-    (triangle.b.y - triangle.c.y) * (triangle.a.x - triangle.c.x) +
-    (triangle.c.x - triangle.b.x) * (triangle.a.y - triangle.c.y);
-
   const step = Math.max(1, Math.floor(pixelWidth / 250));
 
   for (let y = 0; y < pixelHeight; y += step) {
@@ -246,15 +268,7 @@ function updateMultiMix(colors) {
       const sampleX = x + patchWidth / 2;
       const sampleY = y + patchHeight / 2;
 
-      const w1 =
-        ((triangle.b.y - triangle.c.y) * (sampleX - triangle.c.x) +
-          (triangle.c.x - triangle.b.x) * (sampleY - triangle.c.y)) /
-        denom;
-      const w2 =
-        ((triangle.c.y - triangle.a.y) * (sampleX - triangle.c.x) +
-          (triangle.a.x - triangle.c.x) * (sampleY - triangle.c.y)) /
-        denom;
-      const w3 = 1 - w1 - w2;
+      const { w1, w2, w3 } = calculateBarycentricCoordinates(sampleX, sampleY, triangle);
 
       if (w1 < -0.001 || w2 < -0.001 || w3 < -0.001) {
         continue;
@@ -340,17 +354,9 @@ colorInputs.forEach((input, index) => {
 });
 
 function updateColorSamples() {
-  colorSamples.forEach((sample) => {
-    const targetId = sample.dataset.sampleFor;
-    const correspondingInput = colorInputs.find(
-      (input) => input.id === targetId,
-    );
-    if (!correspondingInput) {
-      return;
-    }
-
+  sampleInputMap.forEach((input, sample) => {
     try {
-      const color = new spectral.Color(correspondingInput.value.trim());
+      const color = new spectral.Color(input.value.trim());
       const hex = color.toString({ format: "hex" });
       sample.style.backgroundColor = hex;
       sample.title = hex.toUpperCase();
@@ -365,8 +371,12 @@ buildMixBars();
 buildMultiCanvas();
 updatePalette();
 
+let resizeTimeout;
 window.addEventListener("resize", () => {
-  window.requestAnimationFrame(updatePalette);
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    window.requestAnimationFrame(updatePalette);
+  }, 150);
 });
 
 function handleCanvasHover(event) {
@@ -388,19 +398,8 @@ function handleCanvasHover(event) {
     b: { x: multiCanvas.width, y: 0 },
     c: { x: multiCanvas.width / 2, y: multiCanvas.height },
   };
-  const denom =
-    (triangle.b.y - triangle.c.y) * (triangle.a.x - triangle.c.x) +
-    (triangle.c.x - triangle.b.x) * (triangle.a.y - triangle.c.y);
 
-  const w1 =
-    ((triangle.b.y - triangle.c.y) * (sampleX - triangle.c.x) +
-      (triangle.c.x - triangle.b.x) * (sampleY - triangle.c.y)) /
-    denom;
-  const w2 =
-    ((triangle.c.y - triangle.a.y) * (sampleX - triangle.c.x) +
-      (triangle.a.x - triangle.c.x) * (sampleY - triangle.c.y)) /
-    denom;
-  const w3 = 1 - w1 - w2;
+  const { w1, w2, w3 } = calculateBarycentricCoordinates(sampleX, sampleY, triangle);
 
   if (w1 < -0.001 || w2 < -0.001 || w3 < -0.001) {
     multiInfo.hidden = true;
